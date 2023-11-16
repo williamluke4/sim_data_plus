@@ -214,12 +214,12 @@ public class SimDataPlugin implements FlutterPlugin, MethodCallHandler, Activity
       //get serial number of sim card/s
       phoneAccountHandle = phoneAccounts.next();
       if(count==0){
-        card.put("serialNumber",phoneAccountHandle.getId().substring(0,19));
+        card.put("serialNumber",phoneAccountHandle.getId().replaceAll("[^\\d]", ""));
       }else{
-        card.put("serialNumber",phoneAccountHandle.getId().substring(0,19));
+        card.put("serialNumber",phoneAccountHandle.getId().replaceAll("[^\\d]", ""));
       }
       count++;
-      System.out.println("serial number - "+phoneAccountHandle.getId().substring(0,19));
+      System.out.println("serial number - "+phoneAccountHandle.getId().replaceAll("[^\\d]", ""));
 
       // }catch(Exception ex){
       //   System.out.println("Exception on TelecomManager");
