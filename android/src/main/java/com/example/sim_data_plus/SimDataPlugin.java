@@ -27,38 +27,41 @@ import java.util.List;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import java.util.Iterator;
+
 /**
  * SimDataPlugin
  */
 public class SimDataPlugin implements FlutterPlugin, MethodCallHandler, ActivityAware {
 
-  //channel name, method channel, context and activity defined to call and access sim data 
+  // channel name, method channel, context and activity defined to call and access
+  // sim data
   public static final String CHANNEL_NAME = "com.example.sim_data_plus/channel_name";
   private Context applicationContext;
   private Activity activity;
   private MethodChannel channel;
 
-  //attach plugin to phone operating system through applictaion
+  // attach plugin to phone operating system through applictaion
   @Override
   public void onAttachedToEngine(@NonNull FlutterPluginBinding flutterPluginBinding) {
     this.initialize(flutterPluginBinding.getBinaryMessenger(),
         flutterPluginBinding.getApplicationContext());
   }
 
-  //initialise plugin
+  // initialise plugin
   public static void registerWith(Registrar registrar) {
     SimDataPlugin instance = new SimDataPlugin();
     instance.initialize(registrar.messenger(), registrar.context());
   }
 
-  //initialise method channel and set handler on plugin
+  // initialise method channel and set handler on plugin
   private void initialize(BinaryMessenger messenger, Context context) {
     this.applicationContext = context;
     channel = new MethodChannel(messenger, CHANNEL_NAME);
     channel.setMethodCallHandler(this);
   }
 
-  //remove previously attached plugin from phone operating system through applictaion
+  // remove previously attached plugin from phone operating system through
+  // applictaion
   @Override
   public void onDetachedFromEngine(@NonNull FlutterPluginBinding binding) {
     channel.setMethodCallHandler(null);
@@ -66,23 +69,22 @@ public class SimDataPlugin implements FlutterPlugin, MethodCallHandler, Activity
     this.applicationContext = null;
   }
 
-  //sim data fetching methods called according to phone os version
+  // sim data fetching methods called according to phone os version
   @Override
   public void onMethodCall(@NonNull MethodCall call, @NonNull Result result) {
-    //check if permissions are granted 
+    // check if permissions are granted
     if (!checkPermission()) {
       requestPermission();
     }
     try {
-      //check if android version is android 11
+      // check if android version is android 11
       String simCards;
-      if(android.os.Build.VERSION.SDK_INT >= 30){
-        System.out.println("higher android");
-        //call getSimData() to fetch sim details in case pf android 11 version
+      if (android.os.Build.VERSION.SDK_INT >= 30) {
+        // call getSimData() to fetch sim details in case pf android 11 version
         simCards = getSimData().toString();
-      }else{
-        System.out.println("lower android");
-        //call getSimData1() to fetch sim details in case of android 10 or lower versions
+      } else {
+        // call getSimData1() to fetch sim details in case of android 10 or lower
+        // versions
         simCards = getSimData1().toString();
       }
       result.success(simCards);
@@ -96,33 +98,32 @@ public class SimDataPlugin implements FlutterPlugin, MethodCallHandler, Activity
     }
   }
 
-  //sim data fetching method for android 10 or lower versions
+  // sim data fetching method for android 10 or lower versions
   private JSONObject getSimData1() throws Exception {
-    //get phone service to access telephone network subscription or sim cards
+    // get phone service to access telephone network subscription or sim cards
     SubscriptionManager subscriptionManager = (SubscriptionManager) this.applicationContext
         .getSystemService(Context.TELEPHONY_SUBSCRIPTION_SERVICE);
 
-        //get list of active sim cards on device
-        @SuppressLint("MissingPermission") List<SubscriptionInfo> subscriptionInfos  = subscriptionManager.getActiveSubscriptionInfoList();
-
-
+    // get list of active sim cards on device
+    @SuppressLint("MissingPermission")
+    List<SubscriptionInfo> subscriptionInfos = subscriptionManager.getActiveSubscriptionInfoList();
 
     JSONArray cards = new JSONArray();
-    int i=0;
+    int i = 0;
     for (SubscriptionInfo subscriptionInfo : subscriptionInfos) {
 
-      //storing sim data returned from sim card system service object into variables
+      // storing sim data returned from sim card system service object into variables
       int slotIndex = subscriptionInfo.getSimSlotIndex();
       CharSequence carrierName = subscriptionInfo.getCarrierName();
       String countryIso = subscriptionInfo.getCountryIso();
-      int dataRoaming = subscriptionInfo.getDataRoaming();  // 1 is enabled ; 0 is disabled
+      int dataRoaming = subscriptionInfo.getDataRoaming(); // 1 is enabled ; 0 is disabled
       CharSequence displayName = subscriptionInfo.getDisplayName();
       String serialNumber = subscriptionInfo.getIccId();
       boolean networkRoaming = subscriptionManager.isNetworkRoaming(slotIndex);
       // String phoneNumber = subscriptionInfo.getNumber();
       int subscriptionId = subscriptionInfo.getSubscriptionId();
-                         
-      //storing variable data into new json object for each sim card
+
+      // storing variable data into new json object for each sim card
       JSONObject card = new JSONObject();
 
       card.put("carrierName", carrierName.toString());
@@ -132,67 +133,68 @@ public class SimDataPlugin implements FlutterPlugin, MethodCallHandler, Activity
       card.put("isNetworkRoaming", networkRoaming);
       card.put("slotIndex", slotIndex);
       card.put("serialNumber", serialNumber);
-      card.put("subscriptionId",subscriptionId);
+      card.put("subscriptionId", subscriptionId);
 
-      try{
+      try {
         String phoneNumber = subscriptionInfo.getNumber();
-        card.put("phoneNumber",phoneNumber);
-      }catch(Exception ex){
-        System.out.println("Excp - "+ex);
+        card.put("phoneNumber", phoneNumber);
+      } catch (Exception ex) {
+        System.out.println("Excp - " + ex);
       }
-      //add json object of sim card data into json array
+      // add json object of sim card data into json array
       cards.put(card);
     }
 
-    //storing json array into another json object
+    // storing json array into another json object
     JSONObject simCards = new JSONObject();
     simCards.put("cards", cards);
 
-    //return data in json format object
+    // return data in json format object
     return simCards;
   }
 
-  //sim data fetching method for android 11 version
+  // sim data fetching method for android 11 version
   @SuppressLint("MissingPermission")
   private JSONObject getSimData() throws Exception {
     TelecomManager tm2;
     Iterator<PhoneAccountHandle> phoneAccounts;
     PhoneAccountHandle phoneAccountHandle;
-    //get phone service to access telephone network subscription or sim cards
+    // get phone service to access telephone network subscription or sim cards
     SubscriptionManager subscriptionManager = (SubscriptionManager) this.applicationContext
         .getSystemService(Context.TELEPHONY_SUBSCRIPTION_SERVICE);
 
-        //get list of active sim cards on device
-        List<SubscriptionInfo> subscriptionInfos  =subscriptionManager.getActiveSubscriptionInfoList();
-        //get telephony manager service of device system
-        TelephonyManager telephonyManager = (TelephonyManager) this.applicationContext.getSystemService(Context.TELEPHONY_SERVICE);
+    // get list of active sim cards on device
+    List<SubscriptionInfo> subscriptionInfos = subscriptionManager.getActiveSubscriptionInfoList();
+    // get telephony manager service of device system
+    TelephonyManager telephonyManager = (TelephonyManager) this.applicationContext
+        .getSystemService(Context.TELEPHONY_SERVICE);
     // try{
-        //get telecom manager service of device system
-        tm2= (TelecomManager)this.applicationContext.getSystemService(Context.TELECOM_SERVICE);
-        //get all call capable phone accounts
-        phoneAccounts = tm2.getCallCapablePhoneAccounts().listIterator();
+    // get telecom manager service of device system
+    tm2 = (TelecomManager) this.applicationContext.getSystemService(Context.TELECOM_SERVICE);
+    // get all call capable phone accounts
+    phoneAccounts = tm2.getCallCapablePhoneAccounts().listIterator();
 
     // }catch(Exception ex){
-    //   System.out.println("Exception on TelecomManager");
-    //   System.out.println(ex);
+    // System.out.println("Exception on TelecomManager");
+    // System.out.println(ex);
     // }
     JSONArray cards = new JSONArray();
     int count = 0;
     for (SubscriptionInfo subscriptionInfo : subscriptionInfos) {
-      //storing sim data returned from sim card system service object into variables
+      // storing sim data returned from sim card system service object into variables
       int slotIndex = subscriptionInfo.getSimSlotIndex();
       CharSequence carrierName = subscriptionInfo.getCarrierName();
       String countryIso = subscriptionInfo.getCountryIso();
-      int dataRoaming = subscriptionInfo.getDataRoaming();  // 1 is enabled ; 0 is disabled
+      int dataRoaming = subscriptionInfo.getDataRoaming(); // 1 is enabled ; 0 is disabled
       CharSequence displayName = subscriptionInfo.getDisplayName();
-      String serialNumber =subscriptionInfo.getIccId();
+      String serialNumber = subscriptionInfo.getIccId();
       int mcc = subscriptionInfo.getMcc();
       int mnc = subscriptionInfo.getMnc();
       boolean networkRoaming = subscriptionManager.isNetworkRoaming(slotIndex);
       // String phoneNumber = subscriptionInfo.getNumber();
       int subscriptionId = subscriptionInfo.getSubscriptionId();
 
-      //storing variable data into new json object for each sim card
+      // storing variable data into new json object for each sim card
       JSONObject card = new JSONObject();
 
       card.put("carrierName", carrierName.toString());
@@ -200,71 +202,74 @@ public class SimDataPlugin implements FlutterPlugin, MethodCallHandler, Activity
       card.put("displayName", displayName.toString());
       card.put("isDataRoaming", (dataRoaming == 1));
       card.put("isNetworkRoaming", networkRoaming);
-      card.put("subscriptionId",subscriptionId);
+      card.put("subscriptionId", subscriptionId);
       card.put("slotIndex", slotIndex);
-      try{
+      try {
         String phoneNumber = subscriptionInfo.getNumber();
-        card.put("phoneNumber",phoneNumber);
-      }catch(Exception ex){
-        System.out.println("Excp - "+ex);
+        card.put("phoneNumber", phoneNumber);
+      } catch (Exception ex) {
+        System.out.println("Excp - " + ex);
       }
 
       // try{
-      
-      //get serial number of sim card/s
+
+      // get serial number of sim card/s
       phoneAccountHandle = phoneAccounts.next();
-      if(count==0){
-        card.put("serialNumber",phoneAccountHandle.getId().replaceAll("[^\\d]", ""));
-      }else{
-        card.put("serialNumber",phoneAccountHandle.getId().replaceAll("[^\\d]", ""));
+      if (count == 0) {
+        card.put("serialNumber", phoneAccountHandle.getId().replaceAll("[^\\d]", ""));
+      } else {
+        card.put("serialNumber", phoneAccountHandle.getId().replaceAll("[^\\d]", ""));
       }
       count++;
-      System.out.println("serial number - "+phoneAccountHandle.getId().replaceAll("[^\\d]", ""));
+      System.out.println("serial number - " + phoneAccountHandle.getId().replaceAll("[^\\d]", ""));
 
       // }catch(Exception ex){
-      //   System.out.println("Exception on TelecomManager");
-      //   System.out.println(ex);
+      // System.out.println("Exception on TelecomManager");
+      // System.out.println(ex);
       // }
-      //add json object of sim card data into json array
+      // add json object of sim card data into json array
       cards.put(card);
 
     }
 
-    //storing json array into another json object
+    // storing json array into another json object
     JSONObject simCards = new JSONObject();
     simCards.put("cards", cards);
 
-    //return data in json format object
+    // return data in json format object
     return simCards;
   }
 
-  //request required phone permissions to read sim data
+  // request required phone permissions to read sim data
   private void requestPermission() {
-    //request permission as per android version
-    if(android.os.Build.VERSION.SDK_INT ==30){
-      String[] permissions = {"android.permission.READ_PHONE_STATE"};
+    // request permission as per android version
+    if (android.os.Build.VERSION.SDK_INT == 30) {
+      String[] permissions = { "android.permission.READ_PHONE_STATE" };
       int requestCode = 5;
-      ActivityCompat.requestPermissions(this.activity,permissions, requestCode);
-    }else{
-      String[] perm = {Manifest.permission.READ_PHONE_STATE};
+      ActivityCompat.requestPermissions(this.activity, permissions, requestCode);
+    } else {
+      String[] perm = { Manifest.permission.READ_PHONE_STATE };
       ActivityCompat.requestPermissions(this.activity, perm, 0);
     }
-  
+
   }
-  //request extra phone permissions required to read sim data in android 11
-  private void requestNewPermission(){
-    String[] perm = {Manifest.permission.READ_PHONE_NUMBERS};
+
+  // request extra phone permissions required to read sim data in android 11
+  private void requestNewPermission() {
+    String[] perm = { Manifest.permission.READ_PHONE_NUMBERS };
     ActivityCompat.requestPermissions(this.activity, perm, 8);
   }
-  //check status of phone permissions required
+
+  // check status of phone permissions required
   private boolean checkPermission() {
     return PackageManager.PERMISSION_GRANTED == ContextCompat
-    .checkSelfPermission(this.applicationContext, Manifest.permission.READ_PHONE_STATE);
+        .checkSelfPermission(this.applicationContext, Manifest.permission.READ_PHONE_STATE);
   }
-  //check status of extra phone permissions required
+
+  // check status of extra phone permissions required
   private boolean checkNewPermission() {
     return PackageManager.PERMISSION_GRANTED == ContextCompat
-    .checkSelfPermission(this.applicationContext, Manifest.permission.READ_PHONE_NUMBERS);
+        .checkSelfPermission(this.applicationContext, Manifest.permission.READ_PHONE_NUMBERS);
   }
 
   @Override
