@@ -24,32 +24,31 @@ class SimCard {
   final int? subscriptionId;
   final String? phoneNumber;
   SimCard(
-      this.carrierName,
-      this.countryCode,
-      this.displayName,
-      this.isNetworkRoaming,
-      this.isDataRoaming,
-      // this.mcc,
-      // this.mnc,
-      this.slotIndex,
-      this.serialNumber,
-      this.subscriptionId,
-      this.phoneNumber,
-      );
+    this.carrierName,
+    this.countryCode,
+    this.displayName,
+    this.isNetworkRoaming,
+    this.isDataRoaming,
+    // this.mcc,
+    // this.mnc,
+    this.slotIndex,
+    this.serialNumber,
+    this.subscriptionId,
+    this.phoneNumber,
+  );
 
   static SimCard fromJson(dynamic card) {
     return SimCard(
-      card['carrierName'],
-      card['countryCode'],
-      card['displayName'],
-      card['isDataRoaming'],
-      card['isNetworkRoaming'],
-      // card['mcc'],
-      // card['mnc'],
-      card['slotIndex'],
-      card['serialNumber'],
-      card['subscriptionId']??0,
-      card['phoneNumber']??''
-    );
+        card['carrierName'],
+        card['countryCode'],
+        card['displayName'],
+        card['isDataRoaming'],
+        card['isNetworkRoaming'],
+        // card['mcc'],
+        // card['mnc'],
+        card['slotIndex'],
+        card['serialNumber'],
+        card['subscriptionId'] ?? 0,
+        card['phoneNumber'] ?? '');
   }
 }
